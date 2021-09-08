@@ -1,11 +1,17 @@
 import os
+import random
+from threading import Thread
+from pidev.Joystick import Joystick
+import pygame
 
-# os.environ['DISPLAY'] = ":0.0"
-# os.environ['KIVY_WINDOW'] = 'egl_rpi'
-
+os.environ['DISPLAY'] = ":0.0"
+# os.environ['KIVY_WINDOW'] = 'sdl2'
+from kivy.animation import Animation
 from kivy.app import App
+from kivy.clock import Clock
 from kivy.core.window import Window
 from kivy.lang import Builder
+from kivy.properties import ObjectProperty
 from kivy.uix.screenmanager import ScreenManager, Screen
 
 from pidev.MixPanel import MixPanel
@@ -16,8 +22,12 @@ from pidev.kivy import ImageButton
 from pidev.kivy.selfupdatinglabel import SelfUpdatingLabel
 
 from datetime import datetime
+import time
+
+t = time
 
 time = datetime
+rand = random
 
 MIXPANEL_TOKEN = "x"
 MIXPANEL = MixPanel("Project Name", MIXPANEL_TOKEN)
@@ -25,6 +35,9 @@ MIXPANEL = MixPanel("Project Name", MIXPANEL_TOKEN)
 SCREEN_MANAGER = ScreenManager()
 MAIN_SCREEN_NAME = 'main'
 ADMIN_SCREEN_NAME = 'admin'
+# os.environ["DISPLAY"] = ":0"
+# pygame.display.init()
+joy = Joystick(0, False)
 
 
 class ProjectNameGUI(App):
@@ -40,13 +53,42 @@ class ProjectNameGUI(App):
         return SCREEN_MANAGER
 
 
-Window.clearcolor = (1, 1, 1, 1)  # White
+Window.clearcolor = (random.random(), random.random(), random.random(), random.random())  # White
 
 
 class MainScreen(Screen):
     """
-    Class to handle the main screen and its associated touch events
-    """
+        Class to handle the main screen and its associated touch events
+        """
+
+    def start_joy_thread(self):
+        self.t = Thread(target=self.joy_update)
+        self.t.do_run = True
+        self.t.start()
+
+        def close():
+            self.t.do_run = False
+
+        Window.on_request_close = close
+
+    def end_joy_thread(self):
+        self.t.do_run = False
+
+    def joy_update(self):
+        joystick_values = ObjectProperty(None)
+        while self.t.do_run:
+            self.x = round(joy.get_axis('x'), 2)
+            self.y = round(-1 * joy.get_axis('y'), 2)
+            disp_coord = (round(self.x * 100), round(self.y * 100))
+            self.joystick_values.text = "x: " + str(disp_coord[0]) + "\ny: " + str(disp_coord[1])
+            t.sleep(.025)
+
+    def create_animation(self, instance):
+        num_sec = 3
+        rand_int = random.randint(20, 200)
+        anim1 = Animation(size=(rand_int, rand_int), duration=num_sec)
+        anim1.start(instance)
+        self.change_screen_to_myNewScreen()
 
     def pressed(self):
         """
@@ -55,13 +97,56 @@ class MainScreen(Screen):
         """
         print("Callback from MainScreen.pressed()")
 
-    def admin_action(self):
+    def toggle(self):
+        toggle_btn = ObjectProperty(None)
+        if self.toggle_btn.text == "Off":
+            self.toggle_btn.text = "On"
+        else:
+            self.toggle_btn.text = "Off"
+
+    def toggle_label_text(self):
+        toggle_label_btn = ObjectProperty(None)
+        toggling_label = ObjectProperty(None)
+        if self.toggling_label.text == "Motor Off":
+            self.toggling_label.text = "Motor On"
+        else:
+            self.toggling_label.text = "Motor Off"
+
+    def counter(self):
+        counter_btn = ObjectProperty(None)
+        previous = int(self.counter_btn.text)
+        self.counter_btn.text = str(previous + 1)
+        pass
+
+    @staticmethod
+    def change_screen_to_myNewScreen():
+        SCREEN_MANAGER.current = 'myNewScreen'
+
+    @staticmethod
+    def admin_action():
         """
         Hidden admin button touch event. Transitions to passCodeScreen.
         This method is called from pidev/kivy/PassCodeScreen.kv
         :return: None
         """
         SCREEN_MANAGER.current = 'passCode'
+
+
+class MyNewScreen(Screen):
+    def __init__(self, **kwargs):
+        Builder.load_file('myNewScreen.kv')
+        super(MyNewScreen, self).__init__(**kwargs)
+
+    def create_animation(self, instance):
+        num_sec = 3
+        rand_int = random.randint(20, 200)
+        anim1 = Animation(size=(rand_int, rand_int), duration=num_sec)
+        anim1.start(instance)
+        self.change_screen_to_mainScreen()
+
+    @staticmethod
+    def change_screen_to_mainScreen():
+        SCREEN_MANAGER.current = MAIN_SCREEN_NAME
 
 
 class AdminScreen(Screen):
@@ -116,9 +201,9 @@ Widget additions
 Builder.load_file('main.kv')
 SCREEN_MANAGER.add_widget(MainScreen(name=MAIN_SCREEN_NAME))
 SCREEN_MANAGER.add_widget(PassCodeScreen(name='passCode'))
+SCREEN_MANAGER.add_widget(MyNewScreen(name='myNewScreen'))
 SCREEN_MANAGER.add_widget(PauseScreen(name='pauseScene'))
 SCREEN_MANAGER.add_widget(AdminScreen(name=ADMIN_SCREEN_NAME))
-
 """
 MixPanel
 """
