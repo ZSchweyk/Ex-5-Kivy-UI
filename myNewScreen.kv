@@ -1,0 +1,16 @@
+<myNewScreen>:
+    ImageButton:
+        text: "Next Page"
+        source: "thumbsdown.png"
+        size: 150, 100
+        center_x: root.width * 0.1
+        center_y: root.height * 0.9
+        on_release: root.change_screen_to_mainScreen()
+
+    ImageButton:
+        source: "thumbsdown.png"
+        size: 100, 100
+        center_x: root.width * 0.25
+        center_y: root.height * 0.9
+        color: random.random(), random.random(), random.random(), random.random()
+        on_press: root.create_animation(self)
